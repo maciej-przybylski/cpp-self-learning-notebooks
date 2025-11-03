@@ -1,0 +1,9 @@
+Jan
+Kowalski
+j.kowalski@example.com
+Anna
+Nowak
+anna.nowak@mail.pl
+Piotr
+Zalewski
+piotr_z@test.com
