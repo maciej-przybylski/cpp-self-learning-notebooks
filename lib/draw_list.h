@@ -280,19 +280,50 @@ std::string generateLinkedListSVG(std::vector<std::pair<NodeT*, std::string>> po
         }
         std::sort(depth_pointer_pairs.rbegin(), depth_pointer_pairs.rend());
 
+        std::set<std::pair<int, int>> used_cells;
+
         int pj = 0;
         for(auto pp : depth_pointer_pairs)
         {
-            typedef std::pair<int, NodeT*> Qt;
+            typedef std::pair<std::pair<int,int>, NodeT*> Qt;
             std::priority_queue<Qt, std::vector<Qt>, std::greater<Qt>> queue;
-            queue.push({pj, pp.second});
+
+            NodeT* p = pp.second;
+            queue.push({{pj, tree_nodes[p].i}, p});
+            
             int pj_max = 0;
             while(!queue.empty())
             {
+                // For debugging
+                // std::cout << std::setw(4) << queue.top().first.second 
+                //      << std::setw(4) << queue.top().first.first
+                //      << std::setw(8) << queue.top().second->dane
+                //      << std::setw(20) << queue.top().second
+                //      << std::setw(20) << queue.top().second->nast
+                //      << std::endl;
                 
                 NodeT* p = queue.top().second;
-                int pjp = queue.top().first;
+                int pjp = queue.top().first.first;
                 queue.pop();
+                
+                if(used_cells.find({tree_nodes[p].i, pjp})!=used_cells.end())
+                {
+                    pjp++;
+                    if(p->nast)
+                    {
+                        for(auto &pred : tree_nodes[p->nast].predecessors)
+                        {
+                            if(pred.from == p)
+                            {
+                                pred.j = pjp;
+                                break;
+                            }
+                        }                                
+                    }
+                    queue.push({{pjp, tree_nodes[p].i}, p});
+                    continue;
+                }
+                used_cells.insert({tree_nodes[p].i, pjp});
                 tree_nodes[p].j = pjp;
                 if(p->nast)
                     tree_nodes[p].i =tree_nodes[p->nast].i-1;
@@ -300,12 +331,24 @@ std::string generateLinkedListSVG(std::vector<std::pair<NodeT*, std::string>> po
                 int pred_j = pjp;
                 for(auto &pred : tree_nodes[p].predecessors)
                 {
+                    // For debugging
+                    // std::cout << std::setw(4) << tree_nodes[p].i 
+                    //      << std::setw(4) << pred_j
+                    //      << std::setw(8) << pred.label
+                    //      << std::setw(20) << pred.from
+                    //      << std::setw(20) << pred.to
+                    //      << std::endl;
+                    
                     pred.j = pred_j;
                     if(pred.from!=0)
-                        queue.push({pred.j, pred.from});
+                    {
+                        tree_nodes[pred.from].i = tree_nodes[p].i-1;
+                        queue.push({{pred.j, tree_nodes[pred.from].i}, pred.from});
+                    }
+                    if(pred_j>pjp)
+                        used_cells.insert({tree_nodes[p].i, pred_j});
                     pred_j++;
                 }
-                // p = tree_nodes[p].predecessors.front().p;
                 pj_max = pred_j>pj_max?pred_j:pj_max;
             }
             pj = pj_max;
@@ -387,7 +430,7 @@ std::string generateLinkedListSVG(std::vector<std::pair<NodeT*, std::string>> po
         pj++;
     }
 
-    // // Print tree for DEBUGGING
+    // Print tree for DEBUGGING
     // for(auto pp : tree_nodes)
     // {
     //     std::cout << pp.first 
@@ -396,7 +439,8 @@ std::string generateLinkedListSVG(std::vector<std::pair<NodeT*, std::string>> po
     //         << " " << pp.second.j;
             
     //     for(auto pred : pp.second.predecessors)
-    //         std::cout << " (" << pred.p 
+    //         std::cout << " (" << pred.from 
+    //             << ", " << pred.to
     //             << ", " << pred.j
     //             << ", " << pred.label
     //             << ")";
@@ -484,6 +528,39 @@ void drawList_TEST_2()
     DRAW_LIST(glowa, n1, n2, n3, n4, n5, nx);
     
     delete n1; delete n2; delete n3; delete n4->nast; delete n4;
+}
+
+
+void drawList_TEST_3()
+{
+    Node<int>* n3 = new Node<int>(3000);
+    Node<int>* n2 = new Node<int>(20, n3);
+    Node<int>* n1 = new Node<int>(10, n2);
+    Node<int>* n4 = new Node<int>(40, n2);
+        
+    Node<int>* glowa = n1;
+    
+    Node<int>* nx = 0;
+    
+    DRAW_LIST(glowa, n1, n4, nx);
+    
+    delete n1; delete n2; delete n3; delete n4;
+}
+
+void drawList_TEST_4()
+{
+    Node<int>* n3 = new Node<int>(3000);
+    Node<int>* n2 = new Node<int>(20, n3);
+    Node<int>* n1 = new Node<int>(10, n2);
+    Node<int>* n4 = new Node<int>(40, n3);
+        
+    Node<int>* glowa = n1;
+    
+    Node<int>* nx = 0;
+    
+    DRAW_LIST(glowa, n2, n4, nx);
+    
+    delete n1; delete n2; delete n3; delete n4;
 }
 
 #endif
