@@ -1,1 +1,8 @@
 .ipynb_checkpoints/
+*.tex
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.pdf
